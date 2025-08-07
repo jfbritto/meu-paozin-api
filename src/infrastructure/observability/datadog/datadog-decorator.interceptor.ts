@@ -56,9 +56,9 @@ export class DatadogDecoratorInterceptor implements NestInterceptor {
             trace.operationName,
             trace.tags,
           );
-          if (span) {
-            span.finish();
-          }
+          // if (span) {
+          //   span.finish();
+          // }
         }
       }),
     );

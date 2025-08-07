@@ -51,14 +51,14 @@ export class DatadogInterceptor implements NestInterceptor {
         });
 
         // Adicionar tags ao span
-        if (span) {
-          span.setTag('http.status_code', statusCode);
-          // Verificar se data existe antes de acessar length
-          const responseSize = data ? JSON.stringify(data).length : 0;
-          span.setTag('http.response_size', responseSize);
-          span.setTag('http.duration_ms', duration);
-          span.finish();
-        }
+        // if (span) {
+        //   span.setTag('http.status_code', statusCode);
+        //   // Verificar se data existe antes de acessar length
+        //   const responseSize = data ? JSON.stringify(data).length : 0;
+        //   span.setTag('http.response_size', responseSize);
+        //   span.setTag('http.duration_ms', duration);
+        //   span.finish();
+        // }
 
         this.logger.log(
           `${method} ${url} - ${statusCode} - ${duration}ms`,
@@ -89,11 +89,11 @@ export class DatadogInterceptor implements NestInterceptor {
           endpoint: url,
         });
 
-        if (span) {
-          span.setTag('http.status_code', statusCode);
-          span.setTag('http.duration_ms', duration);
-          span.finish();
-        }
+        // if (span) {
+        //   span.setTag('http.status_code', statusCode);
+        //   span.setTag('http.duration_ms', duration);
+        //   span.finish();
+        // }
 
         this.logger.error(
           `${method} ${url} - ${statusCode} - ${duration}ms - ${error.message}`,
