@@ -11,7 +11,7 @@ export const databaseConfig = (): TypeOrmModuleOptions => ({
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_NAME || 'pedidos_db',
   entities: [Pedido, Cliente, TipoPao],
-  synchronize: process.env.NODE_ENV !== 'production',
+  synchronize: false, // Desabilitado temporariamente
   logging: process.env.NODE_ENV === 'development',
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 }); 
