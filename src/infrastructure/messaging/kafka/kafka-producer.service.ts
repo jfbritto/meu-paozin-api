@@ -1,42 +1,56 @@
 import { Injectable } from '@nestjs/common';
-import { KafkaService } from './kafka.service';
+import { Kafka } from 'kafkajs';
 import { StatusPedido } from '../../database/entities/pedido.entity';
-
-export interface KafkaEvent {
-  topic: string;
-  key?: string;
-  value: any;
-  headers?: Record<string, string>;
-}
 
 @Injectable()
 export class KafkaProducerService {
-  constructor(private kafkaService: KafkaService) {}
+  private producer: any;
 
-  async sendEvent(event: KafkaEvent): Promise<void> {
+  constructor() {
+    const kafka = new Kafka({
+      clientId: 'meupaozin-api',
+      brokers: ['localhost:9092'],
+    });
+
+    this.producer = kafka.producer();
+  }
+
+  async connect(): Promise<void> {
     try {
-      const producer = this.kafkaService.getProducer();
-      
-      await producer.send({
-        topic: event.topic,
-        messages: [
-          {
-            key: event.key,
-            value: JSON.stringify(event.value),
-            headers: event.headers,
-          },
-        ],
-      });
-
-      console.log(`📤 Evento enviado para tópico: ${event.topic}`);
+      await this.producer.connect();
+      console.log('✅ Produtor Kafka conectado com sucesso');
     } catch (error) {
-      console.error(`❌ Erro ao enviar evento para ${event.topic}:`, error);
-      // Não re-throw o erro para não afetar a operação principal
-      // Implementar retry logic aqui no futuro
+      console.error('❌ Erro ao conectar produtor Kafka:', error);
+      throw error;
     }
   }
 
-  // ===== EVENTOS DE PEDIDOS =====
+  async disconnect(): Promise<void> {
+    try {
+      await this.producer.disconnect();
+      console.log('✅ Produtor Kafka desconectado');
+    } catch (error) {
+      console.error('❌ Erro ao desconectar produtor Kafka:', error);
+    }
+  }
+
+  private async sendEvent({ topic, key, value }: { topic: string; key: string; value: any }): Promise<void> {
+    try {
+      await this.producer.send({
+        topic,
+        messages: [
+          {
+            key,
+            value: JSON.stringify(value),
+          },
+        ],
+      });
+    } catch (error) {
+      console.error(`❌ Erro ao enviar evento para tópico ${topic}:`, error);
+      throw error;
+    }
+  }
+
   async sendPedidoCreated(pedido: any): Promise<void> {
     await this.sendEvent({
       topic: 'pedidos.created',
@@ -44,12 +58,13 @@ export class KafkaProducerService {
       value: {
         eventType: 'PEDIDO_CREATED',
         pedidoId: pedido.id,
-        clienteId: pedido.clienteId,
-        tipoPaoId: pedido.tipoPaoId,
+        clienteId: pedido.cliente_id,
+        tipoPaoId: pedido.tipo_pao_id,
         quantidade: pedido.quantidade,
-        precoTotal: pedido.precoTotal,
+        precoTotal: pedido.preco_total,
         status: pedido.status,
-        dataPedido: pedido.dataPedido,
+        observacoes: pedido.observacoes,
+        dataPedido: pedido.data_pedido,
         timestamp: new Date().toISOString(),
       },
     });
@@ -62,28 +77,13 @@ export class KafkaProducerService {
       value: {
         eventType: 'PEDIDO_UPDATED',
         pedidoId: pedido.id,
-        clienteId: pedido.clienteId,
-        tipoPaoId: pedido.tipoPaoId,
+        clienteId: pedido.cliente_id,
+        tipoPaoId: pedido.tipo_pao_id,
         quantidade: pedido.quantidade,
-        precoTotal: pedido.precoTotal,
+        precoTotal: pedido.preco_total,
         status: pedido.status,
         previousStatus: previousStatus,
-        dataAtualizacao: pedido.dataAtualizacao,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-
-  async sendPedidoStatusChanged(pedido: any, previousStatus: StatusPedido): Promise<void> {
-    await this.sendEvent({
-      topic: 'pedidos.status-changed',
-      key: `pedido-${pedido.id}`,
-      value: {
-        eventType: 'PEDIDO_STATUS_CHANGED',
-        pedidoId: pedido.id,
-        clienteId: pedido.clienteId,
-        previousStatus: previousStatus,
-        newStatus: pedido.status,
+        dataAtualizacao: pedido.data_atualizacao,
         timestamp: new Date().toISOString(),
       },
     });
@@ -96,14 +96,16 @@ export class KafkaProducerService {
       value: {
         eventType: 'PEDIDO_CANCELLED',
         pedidoId: pedido.id,
-        clienteId: pedido.clienteId,
+        clienteId: pedido.cliente_id,
+        tipoPaoId: pedido.tipo_pao_id,
+        quantidade: pedido.quantidade,
+        precoTotal: pedido.preco_total,
         status: pedido.status,
         timestamp: new Date().toISOString(),
       },
     });
   }
 
-  // ===== EVENTOS DE CLIENTES =====
   async sendClienteCreated(cliente: any): Promise<void> {
     await this.sendEvent({
       topic: 'clientes.created',
@@ -115,12 +117,13 @@ export class KafkaProducerService {
         email: cliente.email,
         telefone: cliente.telefone,
         endereco: cliente.endereco,
+        dataCriacao: cliente.data_criacao,
         timestamp: new Date().toISOString(),
       },
     });
   }
 
-  async sendClienteUpdated(cliente: any, previousData?: any): Promise<void> {
+  async sendClienteUpdated(cliente: any): Promise<void> {
     await this.sendEvent({
       topic: 'clientes.updated',
       key: `cliente-${cliente.id}`,
@@ -131,27 +134,24 @@ export class KafkaProducerService {
         email: cliente.email,
         telefone: cliente.telefone,
         endereco: cliente.endereco,
-        previousData: previousData,
+        dataAtualizacao: cliente.data_atualizacao,
         timestamp: new Date().toISOString(),
       },
     });
   }
 
-  async sendClienteDeleted(cliente: any): Promise<void> {
+  async sendClienteDeleted(clienteId: number): Promise<void> {
     await this.sendEvent({
       topic: 'clientes.deleted',
-      key: `cliente-${cliente.id}`,
+      key: `cliente-${clienteId}`,
       value: {
         eventType: 'CLIENTE_DELETED',
-        clienteId: cliente.id,
-        nome: cliente.nome,
-        email: cliente.email,
+        clienteId: clienteId,
         timestamp: new Date().toISOString(),
       },
     });
   }
 
-  // ===== EVENTOS DE TIPOS DE PÃO =====
   async sendTipoPaoCreated(tipoPao: any): Promise<void> {
     await this.sendEvent({
       topic: 'tipos-pao.created',
@@ -161,14 +161,15 @@ export class KafkaProducerService {
         tipoPaoId: tipoPao.id,
         nome: tipoPao.nome,
         descricao: tipoPao.descricao,
-        precoBase: tipoPao.precoBase,
+        precoBase: tipoPao.preco_base,
         ativo: tipoPao.ativo,
+        dataCriacao: tipoPao.data_criacao,
         timestamp: new Date().toISOString(),
       },
     });
   }
 
-  async sendTipoPaoUpdated(tipoPao: any, previousData?: any): Promise<void> {
+  async sendTipoPaoUpdated(tipoPao: any): Promise<void> {
     await this.sendEvent({
       topic: 'tipos-pao.updated',
       key: `tipo-pao-${tipoPao.id}`,
@@ -177,65 +178,54 @@ export class KafkaProducerService {
         tipoPaoId: tipoPao.id,
         nome: tipoPao.nome,
         descricao: tipoPao.descricao,
-        precoBase: tipoPao.precoBase,
+        precoBase: tipoPao.preco_base,
         ativo: tipoPao.ativo,
-        previousData: previousData,
+        dataAtualizacao: tipoPao.data_atualizacao,
         timestamp: new Date().toISOString(),
       },
     });
   }
 
-  async sendTipoPaoDeleted(tipoPao: any): Promise<void> {
+  async sendTipoPaoDeleted(tipoPaoId: number): Promise<void> {
     await this.sendEvent({
       topic: 'tipos-pao.deleted',
-      key: `tipo-pao-${tipoPao.id}`,
+      key: `tipo-pao-${tipoPaoId}`,
       value: {
         eventType: 'TIPO_PAO_DELETED',
-        tipoPaoId: tipoPao.id,
-        nome: tipoPao.nome,
+        tipoPaoId: tipoPaoId,
         timestamp: new Date().toISOString(),
       },
     });
   }
 
-  // ===== EVENTOS DE ANALYTICS =====
-  async sendAnalyticsEvent(eventData: any): Promise<void> {
+  async sendAnalyticsEvent(data: any): Promise<void> {
     await this.sendEvent({
       topic: 'analytics.events',
+      key: `analytics-${Date.now()}`,
       value: {
-        ...eventData,
+        ...data,
         timestamp: new Date().toISOString(),
       },
     });
   }
 
-  // ===== EVENTOS DE NOTIFICAÇÕES =====
-  async sendNotificationEvent(userId: number, type: string, message: string, data?: any): Promise<void> {
+  async sendNotificationEvent(data: any): Promise<void> {
     await this.sendEvent({
       topic: 'notifications.events',
-      key: `user-${userId}`,
+      key: `notification-${Date.now()}`,
       value: {
-        eventType: 'NOTIFICATION_SENT',
-        userId: userId,
-        notificationType: type,
-        message: message,
-        data: data,
+        ...data,
         timestamp: new Date().toISOString(),
       },
     });
   }
 
-  // ===== EVENTOS DE AUDITORIA =====
-  async sendAuditEvent(action: string, entity: string, entityId: number, userId?: number, details?: any): Promise<void> {
+  async sendAuditEvent(data: any): Promise<void> {
     await this.sendEvent({
       topic: 'audit.events',
+      key: `audit-${Date.now()}`,
       value: {
-        eventType: 'AUDIT_LOG',
-        action: action,
-        entity: entity,
-        entityId: entityId,
-        userId: userId,
-        details: details,
+        ...data,
         timestamp: new Date().toISOString(),
       },
     });

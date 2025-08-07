@@ -10,7 +10,7 @@ export class CreatePedidoDto {
   })
   @IsNumber({}, { message: 'Cliente ID deve ser um número' })
   @IsNotEmpty({ message: 'Cliente ID é obrigatório' })
-  clienteId: number;
+  cliente_id: number;
 
   @ApiProperty({ 
     description: 'ID do tipo de pão',
@@ -19,7 +19,7 @@ export class CreatePedidoDto {
   })
   @IsNumber({}, { message: 'Tipo de pão ID deve ser um número' })
   @IsNotEmpty({ message: 'Tipo de pão ID é obrigatório' })
-  tipoPaoId: number;
+  tipo_pao_id: number;
 
   @ApiProperty({ 
     description: 'Quantidade do pedido',

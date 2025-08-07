@@ -22,10 +22,10 @@ export class TipoPao {
   descricao?: string;
 
   @ApiProperty({ description: 'Preço base do tipo de pão' })
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
+  @Column({ name: 'preco_base', type: 'decimal', precision: 10, scale: 2, nullable: false })
   @IsNumber({}, { message: 'Preço base deve ser um número' })
   @Min(0, { message: 'Preço base deve ser maior ou igual a zero' })
-  precoBase: number;
+  preco_base: number;
 
   @ApiProperty({ description: 'Indica se o tipo de pão está ativo' })
   @Column({ type: 'boolean', default: true })
@@ -34,13 +34,13 @@ export class TipoPao {
 
   @ApiProperty({ description: 'Data de criação do registro' })
   @CreateDateColumn({ name: 'data_criacao' })
-  dataCriacao: Date;
+  data_criacao: Date;
 
   @ApiProperty({ description: 'Data da última atualização' })
   @UpdateDateColumn({ name: 'data_atualizacao' })
-  dataAtualizacao: Date;
+  data_atualizacao: Date;
 
   // Relacionamento com pedidos
-  @OneToMany('Pedido', 'tipoPao')
+  @OneToMany('Pedido', 'tipo_pao')
   pedidos: any[];
 } 

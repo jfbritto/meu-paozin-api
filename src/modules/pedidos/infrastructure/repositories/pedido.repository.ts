@@ -14,7 +14,7 @@ export class PedidoRepository implements IPedidoRepository {
   async findById(id: number): Promise<Pedido> {
     const pedido = await this.repository.findOne({
       where: { id },
-      relations: ['cliente', 'tipoPao'],
+      relations: ['cliente', 'tipo_pao'],
     });
     
     if (!pedido) {
@@ -26,8 +26,8 @@ export class PedidoRepository implements IPedidoRepository {
 
   async findAll(): Promise<Pedido[]> {
     return this.repository.find({
-      relations: ['cliente', 'tipoPao'],
-      order: { dataPedido: 'DESC' },
+      relations: ['cliente', 'tipo_pao'],
+      order: { data_pedido: 'DESC' },
     });
   }
 
@@ -42,31 +42,31 @@ export class PedidoRepository implements IPedidoRepository {
   async findByStatus(status: StatusPedido): Promise<Pedido[]> {
     return this.repository.find({
       where: { status },
-      relations: ['cliente', 'tipoPao'],
-      order: { dataPedido: 'DESC' },
+      relations: ['cliente', 'tipo_pao'],
+      order: { data_pedido: 'DESC' },
     });
   }
 
-  async findByCliente(clienteId: number): Promise<Pedido[]> {
+  async findByCliente(cliente_id: number): Promise<Pedido[]> {
     return this.repository.find({
-      where: { clienteId },
-      relations: ['cliente', 'tipoPao'],
-      order: { dataPedido: 'DESC' },
+      where: { cliente_id },
+      relations: ['cliente', 'tipo_pao'],
+      order: { data_pedido: 'DESC' },
     });
   }
 
-  async findByTipoPao(tipoPaoId: number): Promise<Pedido[]> {
+  async findByTipoPao(tipo_pao_id: number): Promise<Pedido[]> {
     return this.repository.find({
-      where: { tipoPaoId },
-      relations: ['cliente', 'tipoPao'],
-      order: { dataPedido: 'DESC' },
+      where: { tipo_pao_id },
+      relations: ['cliente', 'tipo_pao'],
+      order: { data_pedido: 'DESC' },
     });
   }
 
   async getPedidosRecentes(limit: number = 10): Promise<Pedido[]> {
     return this.repository.find({
-      relations: ['cliente', 'tipoPao'],
-      order: { dataPedido: 'DESC' },
+      relations: ['cliente', 'tipo_pao'],
+      order: { data_pedido: 'DESC' },
       take: limit,
     });
   }

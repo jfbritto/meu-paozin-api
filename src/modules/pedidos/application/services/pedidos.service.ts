@@ -2,10 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Pedido, StatusPedido } from '../../../../infrastructure/database/entities/pedido.entity';
-import { CreatePedidoDto } from '../dto/create-pedido.dto';
-import { UpdatePedidoDto } from '../dto/update-pedido.dto';
 import { Cliente } from '../../../../infrastructure/database/entities/cliente.entity';
 import { TipoPao } from '../../../../infrastructure/database/entities/tipo-pao.entity';
+import { CreatePedidoDto } from '../dto/create-pedido.dto';
+import { UpdatePedidoDto } from '../dto/update-pedido.dto';
 import { KafkaProducerService } from '../../../../infrastructure/messaging/kafka/kafka-producer.service';
 
 @Injectable()
@@ -23,30 +23,30 @@ export class PedidosService {
   async create(createPedidoDto: CreatePedidoDto): Promise<Pedido> {
     // Verificar se o cliente existe
     const cliente = await this.clienteRepository.findOne({
-      where: { id: createPedidoDto.clienteId }
+      where: { id: createPedidoDto.cliente_id }
     });
     if (!cliente) {
-      throw new NotFoundException(`Cliente com ID ${createPedidoDto.clienteId} não encontrado`);
+      throw new NotFoundException(`Cliente com ID ${createPedidoDto.cliente_id} não encontrado`);
     }
 
     // Verificar se o tipo de pão existe e está ativo
     const tipoPao = await this.tipoPaoRepository.findOne({
-      where: { id: createPedidoDto.tipoPaoId, ativo: true }
+      where: { id: createPedidoDto.tipo_pao_id, ativo: true }
     });
     if (!tipoPao) {
-      throw new NotFoundException(`Tipo de pão com ID ${createPedidoDto.tipoPaoId} não encontrado ou inativo`);
+      throw new NotFoundException(`Tipo de pão com ID ${createPedidoDto.tipo_pao_id} não encontrado ou inativo`);
     }
 
     // Definir status padrão se não fornecido
     const status = createPedidoDto.status || StatusPedido.REALIZADO;
 
     // Calcular preço total
-    const precoTotal = tipoPao.precoBase * createPedidoDto.quantidade;
+    const preco_total = tipoPao.preco_base * createPedidoDto.quantidade;
 
     const pedido = this.pedidoRepository.create({
       ...createPedidoDto,
       status,
-      precoTotal
+      preco_total
     });
 
     const savedPedido = await this.pedidoRepository.save(pedido);
@@ -59,10 +59,10 @@ export class PedidosService {
       await this.kafkaProducer.sendAnalyticsEvent({
         eventType: 'PEDIDO_CREATED_ANALYTICS',
         pedidoId: savedPedido.id,
-        clienteId: savedPedido.clienteId,
-        tipoPaoId: savedPedido.tipoPaoId,
+        clienteId: savedPedido.cliente_id,
+        tipoPaoId: savedPedido.tipo_pao_id,
         quantidade: savedPedido.quantidade,
-        precoTotal: savedPedido.precoTotal,
+        precoTotal: savedPedido.preco_total,
         status: savedPedido.status,
       });
     } catch (error) {
@@ -75,21 +75,21 @@ export class PedidosService {
 
   async findAll(): Promise<Pedido[]> {
     return await this.pedidoRepository.find({
-      relations: ['cliente', 'tipoPao'],
-      order: { dataPedido: 'DESC' }
+      relations: ['cliente', 'tipo_pao'],
+      order: { data_pedido: 'DESC' }
     });
   }
 
   async findOne(id: number): Promise<Pedido> {
     const pedido = await this.pedidoRepository.findOne({
       where: { id },
-      relations: ['cliente', 'tipoPao']
+      relations: ['cliente', 'tipo_pao'],
     });
-
+    
     if (!pedido) {
       throw new NotFoundException(`Pedido com ID ${id} não encontrado`);
     }
-
+    
     return pedido;
   }
 
@@ -98,28 +98,28 @@ export class PedidosService {
     const previousStatus = pedido.status;
 
     // Verificar se o cliente existe (se estiver sendo atualizado)
-    if (updatePedidoDto.clienteId) {
+    if (updatePedidoDto.cliente_id) {
       const cliente = await this.clienteRepository.findOne({
-        where: { id: updatePedidoDto.clienteId }
+        where: { id: updatePedidoDto.cliente_id }
       });
       if (!cliente) {
-        throw new NotFoundException(`Cliente com ID ${updatePedidoDto.clienteId} não encontrado`);
+        throw new NotFoundException(`Cliente com ID ${updatePedidoDto.cliente_id} não encontrado`);
       }
     }
 
     // Verificar se o tipo de pão existe e está ativo (se estiver sendo atualizado)
-    if (updatePedidoDto.tipoPaoId) {
+    if (updatePedidoDto.tipo_pao_id) {
       const tipoPao = await this.tipoPaoRepository.findOne({
-        where: { id: updatePedidoDto.tipoPaoId, ativo: true }
+        where: { id: updatePedidoDto.tipo_pao_id, ativo: true }
       });
       if (!tipoPao) {
-        throw new NotFoundException(`Tipo de pão com ID ${updatePedidoDto.tipoPaoId} não encontrado ou inativo`);
+        throw new NotFoundException(`Tipo de pão com ID ${updatePedidoDto.tipo_pao_id} não encontrado ou inativo`);
       }
     }
 
     // Recalcular preço total se quantidade ou tipo de pão foram alterados
-    if (updatePedidoDto.quantidade || updatePedidoDto.tipoPaoId) {
-      const tipoPaoId = updatePedidoDto.tipoPaoId || pedido.tipoPaoId;
+    if (updatePedidoDto.quantidade || updatePedidoDto.tipo_pao_id) {
+      const tipoPaoId = updatePedidoDto.tipo_pao_id || pedido.tipo_pao_id;
       const quantidade = updatePedidoDto.quantidade || pedido.quantidade;
       
       const tipoPao = await this.tipoPaoRepository.findOne({
@@ -127,97 +127,94 @@ export class PedidosService {
       });
       
       if (tipoPao) {
-        updatePedidoDto.precoTotal = tipoPao.precoBase * quantidade;
+        updatePedidoDto.preco_total = tipoPao.preco_base * quantidade;
       }
     }
 
     Object.assign(pedido, updatePedidoDto);
     const updatedPedido = await this.pedidoRepository.save(pedido);
 
-    // Enviar eventos Kafka
+    // Enviar evento Kafka para pedido atualizado
     try {
       await this.kafkaProducer.sendPedidoUpdated(updatedPedido, previousStatus);
       
-      // Se o status mudou, enviar evento específico
-      if (updatePedidoDto.status && updatePedidoDto.status !== previousStatus) {
-        await this.kafkaProducer.sendPedidoStatusChanged(updatedPedido, previousStatus);
-      }
-
       // Enviar evento de analytics
       await this.kafkaProducer.sendAnalyticsEvent({
         eventType: 'PEDIDO_UPDATED_ANALYTICS',
         pedidoId: updatedPedido.id,
-        clienteId: updatedPedido.clienteId,
+        clienteId: updatedPedido.cliente_id,
+        tipoPaoId: updatedPedido.tipo_pao_id,
+        quantidade: updatedPedido.quantidade,
+        precoTotal: updatedPedido.preco_total,
+        status: updatedPedido.status,
         previousStatus: previousStatus,
-        newStatus: updatedPedido.status,
-        changes: updatePedidoDto,
       });
     } catch (error) {
       console.error('❌ Erro ao enviar eventos Kafka:', error);
+      // Não falhar a operação principal se o Kafka falhar
     }
 
     return updatedPedido;
   }
 
   async remove(id: number): Promise<void> {
+    const pedido = await this.findOne(id);
+    
+    // Enviar evento Kafka para pedido cancelado
     try {
-      const pedido = await this.findOne(id);
-      await this.pedidoRepository.remove(pedido);
-
-      // Enviar evento Kafka para pedido removido
-      try {
-        await this.kafkaProducer.sendPedidoCancelled(pedido);
-        
-        // Enviar evento de analytics
-        await this.kafkaProducer.sendAnalyticsEvent({
-          eventType: 'PEDIDO_CANCELLED_ANALYTICS',
-          pedidoId: pedido.id,
-          clienteId: pedido.clienteId,
-          status: pedido.status,
-        });
-      } catch (error) {
-        console.error('❌ Erro ao enviar eventos Kafka:', error);
-        // Não re-throw o erro para não afetar a operação principal
-      }
+      await this.kafkaProducer.sendPedidoCancelled(pedido);
+      
+      // Enviar evento de analytics
+      await this.kafkaProducer.sendAnalyticsEvent({
+        eventType: 'PEDIDO_CANCELLED_ANALYTICS',
+        pedidoId: pedido.id,
+        clienteId: pedido.cliente_id,
+        tipoPaoId: pedido.tipo_pao_id,
+        quantidade: pedido.quantidade,
+        precoTotal: pedido.preco_total,
+        status: pedido.status,
+      });
     } catch (error) {
-      console.error('❌ Erro ao remover pedido:', error);
-      throw error;
+      console.error('❌ Erro ao enviar eventos Kafka:', error);
+      // Não falhar a operação principal se o Kafka falhar
     }
+
+    await this.pedidoRepository.remove(pedido);
   }
 
   async findByStatus(status: StatusPedido): Promise<Pedido[]> {
     return await this.pedidoRepository.find({
       where: { status },
-      relations: ['cliente', 'tipoPao'],
-      order: { dataPedido: 'DESC' }
+      relations: ['cliente', 'tipo_pao'],
+      order: { data_pedido: 'DESC' }
     });
   }
 
-  async findByCliente(clienteId: number): Promise<Pedido[]> {
+  async getPedidosRecentes(limit: number = 10): Promise<Pedido[]> {
     return await this.pedidoRepository.find({
-      where: { clienteId },
-      relations: ['cliente', 'tipoPao'],
-      order: { dataPedido: 'DESC' }
+      relations: ['cliente', 'tipo_pao'],
+      order: { data_pedido: 'DESC' },
+      take: limit
     });
   }
 
-  async findByTipoPao(tipoPaoId: number): Promise<Pedido[]> {
+  async findByCliente(cliente_id: number): Promise<Pedido[]> {
     return await this.pedidoRepository.find({
-      where: { tipoPaoId },
-      relations: ['cliente', 'tipoPao'],
-      order: { dataPedido: 'DESC' }
+      where: { cliente_id },
+      relations: ['cliente', 'tipo_pao'],
+      order: { data_pedido: 'DESC' }
     });
   }
 
-  async getPedidosRecentes(limit?: number): Promise<Pedido[]> {
-    // Definir valor padrão se não fornecido
-    const defaultLimit = 10;
-    const finalLimit = limit || defaultLimit;
-    
+  async findByTipoPao(tipo_pao_id: number): Promise<Pedido[]> {
     return await this.pedidoRepository.find({
-      relations: ['cliente', 'tipoPao'],
-      order: { dataPedido: 'DESC' },
-      take: finalLimit
+      where: { tipo_pao_id },
+      relations: ['cliente', 'tipo_pao'],
+      order: { data_pedido: 'DESC' }
     });
+  }
+
+  getStatusDisponiveis(): StatusPedido[] {
+    return Object.values(StatusPedido);
   }
 }

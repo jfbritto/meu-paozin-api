@@ -36,11 +36,11 @@ export class Cliente {
 
   @ApiProperty({ description: 'Data de criação do registro' })
   @CreateDateColumn({ name: 'data_criacao' })
-  dataCriacao: Date;
+  data_criacao: Date;
 
   @ApiProperty({ description: 'Data da última atualização' })
   @UpdateDateColumn({ name: 'data_atualizacao' })
-  dataAtualizacao: Date;
+  data_atualizacao: Date;
 
   // Relacionamento com pedidos
   @OneToMany('Pedido', 'cliente')

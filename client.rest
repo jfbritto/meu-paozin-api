@@ -1,29 +1,15 @@
 @baseUrl = http://localhost:3000/api
 
-### Teste da API MeuPaoZin - Versão 5.0 (Com Enum de Status)
-### ✅ NOVAS FUNCIONALIDADES:
-### - Sistema normalizado com tabelas separadas
-### - Entidades: Clientes, Tipos de Pão, Pedidos
-### - Status de pedido implementado como enum
-### - Relacionamentos com integridade referencial
-### - Endpoints RESTful completos para todas as entidades
-### - Banco de dados PostgreSQL com TypeORM
-### - Swagger documentation
-### - Validações robustas
-### - Testes unitários
-
-## 🔧 CONFIGURAÇÃO INICIAL
-### Verificar se a API está funcionando
+### Testar conexão
 GET {{baseUrl}}
-Content-Type: application/json
 
-## 👥 CLIENTES
+## 📋 CLIENTES
 
 ### Listar todos os clientes
 GET {{baseUrl}}/clientes
 Content-Type: application/json
 
-### Listar apenas clientes ativos
+### Listar clientes ativos
 GET {{baseUrl}}/clientes/ativos
 Content-Type: application/json
 
@@ -40,10 +26,10 @@ POST {{baseUrl}}/clientes
 Content-Type: application/json
 
 {
-  "nome": "Novo Cliente",
-  "email": "novo.cliente@email.com",
-  "telefone": "(11) 12345-6789",
-  "endereco": "Rua Nova, 123 - Bairro"
+  "nome": "João Silva",
+  "email": "joao.silva@email.com",
+  "telefone": "(11) 99999-9999",
+  "endereco": "Rua das Flores, 123 - Centro"
 }
 
 ### Atualizar cliente
@@ -51,12 +37,12 @@ PATCH {{baseUrl}}/clientes/1
 Content-Type: application/json
 
 {
-  "nome": "João Silva Atualizado",
-  "telefone": "(11) 98765-4321"
+  "nome": "João Silva Santos",
+  "telefone": "(11) 88888-8888"
 }
 
 ### Excluir cliente
-DELETE {{baseUrl}}/clientes/4
+DELETE {{baseUrl}}/clientes/1
 Content-Type: application/json
 
 ## 🥖 TIPOS DE PÃO
@@ -65,7 +51,7 @@ Content-Type: application/json
 GET {{baseUrl}}/tipos-pao
 Content-Type: application/json
 
-### Listar apenas tipos de pão ativos
+### Listar tipos de pão ativos
 GET {{baseUrl}}/tipos-pao/ativos
 Content-Type: application/json
 
@@ -84,7 +70,7 @@ Content-Type: application/json
 {
   "nome": "Pão de Mandioca",
   "descricao": "Pão de mandioca tradicional",
-  "precoBase": 3.20,
+  "preco_base": 3.20,
   "ativo": true
 }
 
@@ -93,7 +79,7 @@ PATCH {{baseUrl}}/tipos-pao/1
 Content-Type: application/json
 
 {
-  "precoBase": 3.80,
+  "preco_base": 3.80,
   "descricao": "Pão de queijo premium"
 }
 
@@ -140,8 +126,8 @@ POST {{baseUrl}}/pedidos
 Content-Type: application/json
 
 {
-  "clienteId": 1,
-  "tipoPaoId": 1,
+  "cliente_id": 1,
+  "tipo_pao_id": 1,
   "quantidade": 3,
   "observacoes": "Bem assado"
 }
@@ -188,7 +174,7 @@ Content-Type: application/json
   "status": "FINALIZADO"
 }
 
-### Alterar status de pedido - CANCELADO
+### Cancelar pedido
 PATCH {{baseUrl}}/pedidos/1
 Content-Type: application/json
 
@@ -198,77 +184,4 @@ Content-Type: application/json
 
 ### Excluir pedido
 DELETE {{baseUrl}}/pedidos/1
-Content-Type: application/json
-
-## 🧪 TESTES DE ERRO
-
-### Tentar criar cliente com email duplicado
-POST {{baseUrl}}/clientes
-Content-Type: application/json
-
-{
-  "nome": "Cliente Duplicado",
-  "email": "joao.silva@email.com"
-}
-
-### Tentar criar tipo de pão com nome duplicado
-POST {{baseUrl}}/tipos-pao
-Content-Type: application/json
-
-{
-  "nome": "Pão de Queijo",
-  "precoBase": 4.00
-}
-
-### Tentar criar pedido com cliente inexistente
-POST {{baseUrl}}/pedidos
-Content-Type: application/json
-
-{
-  "clienteId": 999,
-  "tipoPaoId": 1,
-  "quantidade": 2
-}
-
-### Tentar criar pedido com tipo de pão inexistente
-POST {{baseUrl}}/pedidos
-Content-Type: application/json
-
-{
-  "clienteId": 1,
-  "tipoPaoId": 999,
-  "quantidade": 2
-}
-
-### Tentar criar pedido com status inválido
-POST {{baseUrl}}/pedidos
-Content-Type: application/json
-
-{
-  "clienteId": 1,
-  "tipoPaoId": 1,
-  "quantidade": 2,
-  "status": "STATUS_INVALIDO"
-}
-
-### Buscar cliente inexistente
-GET {{baseUrl}}/clientes/999
-Content-Type: application/json
-
-### Buscar tipo de pão inexistente
-GET {{baseUrl}}/tipos-pao/999
-Content-Type: application/json
-
-### Buscar pedido inexistente
-GET {{baseUrl}}/pedidos/999
-Content-Type: application/json
-
-### Buscar pedidos por status inválido
-GET {{baseUrl}}/pedidos/status/STATUS_INVALIDO
-Content-Type: application/json
-
-## 📚 DOCUMENTAÇÃO
-
-### Acessar Swagger UI
-GET http://localhost:3000/api/docs
 Content-Type: application/json 

@@ -18,16 +18,16 @@ export class Pedido {
   id: number;
 
   @ApiProperty({ description: 'ID do cliente' })
-  @Column({ type: 'int', nullable: false })
+  @Column({ name: 'cliente_id', type: 'int', nullable: false })
   @IsNumber({}, { message: 'Cliente ID deve ser um número' })
   @IsNotEmpty({ message: 'Cliente ID é obrigatório' })
-  clienteId: number;
+  cliente_id: number;
 
   @ApiProperty({ description: 'ID do tipo de pão' })
-  @Column({ type: 'int', nullable: false })
+  @Column({ name: 'tipo_pao_id', type: 'int', nullable: false })
   @IsNumber({}, { message: 'Tipo de pão ID deve ser um número' })
   @IsNotEmpty({ message: 'Tipo de pão ID é obrigatório' })
-  tipoPaoId: number;
+  tipo_pao_id: number;
 
   @ApiProperty({ description: 'Quantidade do pedido' })
   @Column({ type: 'int', nullable: false })
@@ -36,10 +36,10 @@ export class Pedido {
   quantidade: number;
 
   @ApiProperty({ description: 'Preço total do pedido' })
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
+  @Column({ name: 'preco_total', type: 'decimal', precision: 10, scale: 2, nullable: false })
   @IsNumber({}, { message: 'Preço total deve ser um número' })
   @Min(0, { message: 'Preço total deve ser maior ou igual a zero' })
-  precoTotal: number;
+  preco_total: number;
 
   @ApiProperty({ 
     description: 'Status do pedido',
@@ -64,11 +64,11 @@ export class Pedido {
 
   @ApiProperty({ description: 'Data do pedido' })
   @CreateDateColumn({ name: 'data_pedido' })
-  dataPedido: Date;
+  data_pedido: Date;
 
   @ApiProperty({ description: 'Data da última atualização' })
   @UpdateDateColumn({ name: 'data_atualizacao' })
-  dataAtualizacao: Date;
+  data_atualizacao: Date;
 
   // Relacionamentos
   @ManyToOne('Cliente', 'pedidos', { onDelete: 'CASCADE' })
@@ -77,5 +77,5 @@ export class Pedido {
 
   @ManyToOne('TipoPao', 'pedidos', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tipo_pao_id' })
-  tipoPao: any;
+  tipo_pao: any;
 } 

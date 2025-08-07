@@ -10,7 +10,7 @@ export class UpdatePedidoDto {
   })
   @IsOptional()
   @IsNumber({}, { message: 'Cliente ID deve ser um número' })
-  clienteId?: number;
+  cliente_id?: number;
 
   @ApiPropertyOptional({ 
     description: 'ID do tipo de pão',
@@ -19,7 +19,7 @@ export class UpdatePedidoDto {
   })
   @IsOptional()
   @IsNumber({}, { message: 'Tipo de pão ID deve ser um número' })
-  tipoPaoId?: number;
+  tipo_pao_id?: number;
 
   @ApiPropertyOptional({ 
     description: 'Quantidade do pedido',
@@ -48,7 +48,7 @@ export class UpdatePedidoDto {
   @IsOptional()
   @IsNumber({}, { message: 'Preço total deve ser um número' })
   @Min(0, { message: 'Preço total deve ser maior ou igual a zero' })
-  precoTotal?: number;
+  preco_total?: number;
 
   @ApiPropertyOptional({ 
     description: 'Observações do pedido',

@@ -1,202 +1,97 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  ParseIntPipe,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { PedidosService } from '../services/pedidos.service';
 import { CreatePedidoDto } from '../dto/create-pedido.dto';
 import { UpdatePedidoDto } from '../dto/update-pedido.dto';
-import { GetPedidosRecentesDto } from '../dto/get-pedidos-recentes.dto'; // New import
 import { Pedido, StatusPedido } from '../../../../infrastructure/database/entities/pedido.entity';
-// import { DatadogMetrics, DatadogEvents, DatadogTrace } from '../../../../infrastructure/observability/datadog/datadog.decorator';
+import { LoggingInterceptor } from '../../../../common/interceptors/logging.interceptor';
 
 @ApiTags('Pedidos')
 @Controller('pedidos')
+@UseInterceptors(LoggingInterceptor)
 export class PedidosController {
   constructor(private readonly pedidosService: PedidosService) {}
 
   @Post()
   @ApiOperation({ summary: 'Criar um novo pedido' })
-  @ApiResponse({
-    status: 201,
-    description: 'Pedido criado com sucesso',
-    type: Pedido,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Dados inválidos'
-  })
-  // @DatadogTrace('pedido.create', { operation: 'create_pedido' })
-  // @DatadogMetrics(
-  //   { name: 'pedido.created', value: 1, tags: { operation: 'create' } }
-  // )
-  // @DatadogEvents(
-  //   { name: 'pedido.created', attributes: { operation: 'create_pedido' } }
-  // )
+  @ApiResponse({ status: 201, description: 'Pedido criado com sucesso', type: Pedido })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 404, description: 'Cliente ou tipo de pão não encontrado' })
   async create(@Body() createPedidoDto: CreatePedidoDto): Promise<Pedido> {
-    return await this.pedidosService.create(createPedidoDto);
+    return this.pedidosService.create(createPedidoDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar todos os pedidos' })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de pedidos',
-    type: [Pedido],
-  })
+  @ApiResponse({ status: 200, description: 'Lista de pedidos retornada', type: [Pedido] })
   async findAll(): Promise<Pedido[]> {
-    return await this.pedidosService.findAll();
+    return this.pedidosService.findAll();
   }
 
   @Get('status')
-  @ApiOperation({ summary: 'Listar todos os status disponíveis' })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de status retornada com sucesso',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'string',
-        enum: Object.values(StatusPedido)
-      }
-    }
-  })
-  async getStatusOptions(): Promise<StatusPedido[]> {
-    return Object.values(StatusPedido);
+  @ApiOperation({ summary: 'Listar status disponíveis' })
+  @ApiResponse({ status: 200, description: 'Lista de status retornada' })
+  getStatusDisponiveis(): StatusPedido[] {
+    return this.pedidosService.getStatusDisponiveis();
   }
 
   @Get('recentes')
-  @ApiOperation({ summary: 'Buscar pedidos recentes' })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Número máximo de pedidos (padrão: 10, máximo: 50)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de pedidos recentes',
-    type: [Pedido],
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Parâmetros inválidos'
-  })
-  // @DatadogTrace('pedido.recentes', { operation: 'get_recent_pedidos' })
-  // @DatadogMetrics(
-  //   { name: 'pedido.recentes.accessed', value: 1, tags: { operation: 'get_recent' } }
-  // )
-  async findRecent(@Query() query: GetPedidosRecentesDto): Promise<Pedido[]> { // Changed parameter
-    // Usar valor padrão se não fornecido
-    const limit = query.limit || 10;
-    return await this.pedidosService.getPedidosRecentes(limit);
+  @ApiOperation({ summary: 'Listar pedidos recentes' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Número máximo de pedidos (padrão: 10)' })
+  @ApiResponse({ status: 200, description: 'Lista de pedidos recentes retornada', type: [Pedido] })
+  async getPedidosRecentes(@Query('limit') limit?: number): Promise<Pedido[]> {
+    return this.pedidosService.getPedidosRecentes(limit);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Buscar um pedido por ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'Pedido encontrado',
-    type: Pedido,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Pedido não encontrado',
-  })
+  @ApiOperation({ summary: 'Buscar pedido por ID' })
+  @ApiParam({ name: 'id', description: 'ID do pedido' })
+  @ApiResponse({ status: 200, description: 'Pedido encontrado', type: Pedido })
+  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
   async findOne(@Param('id') id: string): Promise<Pedido> {
-    return await this.pedidosService.findOne(+id);
+    return this.pedidosService.findOne(+id);
   }
 
   @Get('status/:status')
   @ApiOperation({ summary: 'Buscar pedidos por status' })
-  @ApiParam({
-    name: 'status',
-    description: 'Status do pedido',
-    enum: StatusPedido,
-    example: StatusPedido.REALIZADO
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de pedidos por status retornada com sucesso',
-    type: [Pedido]
-  })
+  @ApiParam({ name: 'status', description: 'Status dos pedidos', enum: StatusPedido })
+  @ApiResponse({ status: 200, description: 'Lista de pedidos por status retornada', type: [Pedido] })
   async findByStatus(@Param('status') status: StatusPedido): Promise<Pedido[]> {
-    return await this.pedidosService.findByStatus(status);
+    return this.pedidosService.findByStatus(status);
   }
 
-  @Get('cliente/:clienteId')
+  @Get('cliente/:cliente_id')
   @ApiOperation({ summary: 'Buscar pedidos por cliente' })
-  @ApiParam({
-    name: 'clienteId',
-    description: 'ID do cliente',
-    type: 'number',
-    example: 1
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de pedidos por cliente retornada com sucesso',
-    type: [Pedido]
-  })
-  async findByCliente(@Param('clienteId', ParseIntPipe) clienteId: number): Promise<Pedido[]> {
-    return await this.pedidosService.findByCliente(clienteId);
+  @ApiParam({ name: 'cliente_id', description: 'ID do cliente' })
+  @ApiResponse({ status: 200, description: 'Lista de pedidos do cliente retornada', type: [Pedido] })
+  async findByCliente(@Param('cliente_id') cliente_id: string): Promise<Pedido[]> {
+    return this.pedidosService.findByCliente(+cliente_id);
   }
 
-  @Get('tipo-pao/:tipoPaoId')
+  @Get('tipo-pao/:tipo_pao_id')
   @ApiOperation({ summary: 'Buscar pedidos por tipo de pão' })
-  @ApiParam({
-    name: 'tipoPaoId',
-    description: 'ID do tipo de pão',
-    type: 'number',
-    example: 1
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de pedidos por tipo de pão retornada com sucesso',
-    type: [Pedido]
-  })
-  async findByTipoPao(@Param('tipoPaoId', ParseIntPipe) tipoPaoId: number): Promise<Pedido[]> {
-    return await this.pedidosService.findByTipoPao(tipoPaoId);
+  @ApiParam({ name: 'tipo_pao_id', description: 'ID do tipo de pão' })
+  @ApiResponse({ status: 200, description: 'Lista de pedidos do tipo de pão retornada', type: [Pedido] })
+  async findByTipoPao(@Param('tipo_pao_id') tipo_pao_id: string): Promise<Pedido[]> {
+    return this.pedidosService.findByTipoPao(+tipo_pao_id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Atualizar um pedido' })
-  @ApiResponse({
-    status: 200,
-    description: 'Pedido atualizado com sucesso',
-    type: Pedido,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Pedido não encontrado',
-  })
-  async update(
-    @Param('id') id: string,
-    @Body() updatePedidoDto: UpdatePedidoDto,
-  ): Promise<Pedido> {
-    return await this.pedidosService.update(+id, updatePedidoDto);
+  @ApiOperation({ summary: 'Atualizar pedido' })
+  @ApiParam({ name: 'id', description: 'ID do pedido' })
+  @ApiResponse({ status: 200, description: 'Pedido atualizado com sucesso', type: Pedido })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  async update(@Param('id') id: string, @Body() updatePedidoDto: UpdatePedidoDto): Promise<Pedido> {
+    return this.pedidosService.update(+id, updatePedidoDto);
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Remover um pedido' })
-  @ApiResponse({
-    status: 204,
-    description: 'Pedido removido com sucesso',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Pedido não encontrado',
-  })
+  @ApiOperation({ summary: 'Excluir pedido' })
+  @ApiParam({ name: 'id', description: 'ID do pedido' })
+  @ApiResponse({ status: 204, description: 'Pedido excluído com sucesso' })
+  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
   async remove(@Param('id') id: string): Promise<void> {
-    return await this.pedidosService.remove(+id);
+    return this.pedidosService.remove(+id);
   }
 }
