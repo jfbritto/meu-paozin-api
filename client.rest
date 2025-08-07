@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:3000/api
+@baseUrl = http://92.246.128.94:3000/api
 
 ### Testar conexão
 GET {{baseUrl}}
