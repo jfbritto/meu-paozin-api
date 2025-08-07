@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as tracer from 'dd-trace';
+// import * as tracer from 'dd-trace';
 
 @Injectable()
 export class DatadogService {
@@ -26,22 +26,22 @@ export class DatadogService {
       }
 
       // Configurar o tracer do Datadog
-      tracer.init({
-        service: serviceName,
-        env: environment,
-        version: version,
-        hostname: agentHost,
-        port: agentPort,
-        logInjection: true,
-        runtimeMetrics: true,
-        profiling: true,
-        reportHostname: true,
-        tags: {
-          service: serviceName,
-          env: environment,
-          version: version,
-        },
-      });
+      // tracer.init({
+      //   service: serviceName,
+      //   env: environment,
+      //   version: version,
+      //   hostname: agentHost,
+      //   port: agentPort,
+      //   logInjection: true,
+      //   runtimeMetrics: true,
+      //   profiling: true,
+      //   reportHostname: true,
+      //   tags: {
+      //     service: serviceName,
+      //     env: environment,
+      //     version: version,
+      //   },
+      // });
 
       this.isInitialized = true;
       this.logger.log(`✅ Datadog inicializado - Service: ${serviceName}, Env: ${environment}, Version: ${version}`);
@@ -57,15 +57,16 @@ export class DatadogService {
     if (!this.isInitialized) return;
 
     try {
-      const span = tracer.scope().active();
-      if (span) {
-        span.setTag(`custom.metric.${name}`, value);
-        if (tags) {
-          Object.entries(tags).forEach(([key, value]) => {
-            span.setTag(key, value);
-          });
-        }
-      }
+      // const span = tracer.scope().active();
+      // if (span) {
+      //   span.setTag(`custom.metric.${name}`, value);
+      //   if (tags) {
+      //     Object.entries(tags).forEach(([key, value]) => {
+      //       span.setTag(key, value);
+      //     });
+      //   }
+      // }
+      this.logger.log(`Métrica ${name}: ${value}`, tags);
     } catch (error) {
       this.logger.error(`Erro ao enviar métrica ${name}:`, error);
     }
@@ -78,13 +79,14 @@ export class DatadogService {
     if (!this.isInitialized) return;
 
     try {
-      const span = tracer.scope().active();
-      if (span) {
-        span.addTags({
-          'event.name': name,
-          ...attributes,
-        });
-      }
+      // const span = tracer.scope().active();
+      // if (span) {
+      //   span.addTags({
+      //     'event.name': name,
+      //     ...attributes,
+      //   });
+      // }
+      this.logger.log(`Evento ${name}`, attributes);
     } catch (error) {
       this.logger.error(`Erro ao enviar evento ${name}:`, error);
     }
@@ -97,12 +99,14 @@ export class DatadogService {
     if (!this.isInitialized) return null;
 
     try {
-      return tracer.startSpan(operationName, {
-        tags: {
-          'operation.name': operationName,
-          ...tags,
-        },
-      });
+      // return tracer.startSpan(operationName, {
+      //   tags: {
+      //     'operation.name': operationName,
+      //     ...tags,
+      //   },
+      // });
+      this.logger.log(`Span criado: ${operationName}`, tags);
+      return null;
     } catch (error) {
       this.logger.error(`Erro ao criar span ${operationName}:`, error);
       return null;
@@ -116,10 +120,11 @@ export class DatadogService {
     if (!this.isInitialized) return;
 
     try {
-      const span = tracer.scope().active();
-      if (span) {
-        span.addTags(tags);
-      }
+      // const span = tracer.scope().active();
+      // if (span) {
+      //   span.addTags(tags);
+      // }
+      this.logger.log('Tags adicionadas:', tags);
     } catch (error) {
       this.logger.error('Erro ao adicionar tags:', error);
     }
@@ -132,15 +137,16 @@ export class DatadogService {
     if (!this.isInitialized) return;
 
     try {
-      const span = tracer.scope().active();
-      if (span) {
-        span.setTag('error', true);
-        span.setTag('error.message', error.message);
-        span.setTag('error.stack', error.stack);
-        if (tags) {
-          span.addTags(tags);
-        }
-      }
+      // const span = tracer.scope().active();
+      // if (span) {
+      //   span.setTag('error', true);
+      //   span.setTag('error.message', error.message);
+      //   span.setTag('error.stack', error.stack);
+      //   if (tags) {
+      //     span.addTags(tags);
+      //   }
+      // }
+      this.logger.error('Erro adicionado:', error.message, tags);
     } catch (err) {
       this.logger.error('Erro ao adicionar erro ao span:', err);
     }

@@ -8,7 +8,7 @@ import {
 import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { DatadogService } from './datadog.service';
-import * as tracer from 'dd-trace';
+// import * as tracer from 'dd-trace';
 
 @Injectable()
 export class DatadogInterceptor implements NestInterceptor {

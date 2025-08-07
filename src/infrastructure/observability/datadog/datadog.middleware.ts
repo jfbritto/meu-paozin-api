@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { DatadogService } from './datadog.service';
-import * as tracer from 'dd-trace';
+// import * as tracer from 'dd-trace';
 
 @Injectable()
 export class DatadogMiddleware implements NestMiddleware {
@@ -11,15 +11,15 @@ export class DatadogMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: NextFunction) {
     // Adicionar headers de trace do Datadog
-    const span = tracer.scope().active();
-    if (span) {
-      const traceId = span.context().toTraceId();
-      const spanId = span.context().toSpanId();
+    // const span = tracer.scope().active();
+    // if (span) {
+    //   const traceId = span.context().toTraceId();
+    //   const spanId = span.context().toSpanId();
 
-      res.setHeader('X-Datadog-Trace-ID', traceId);
-      res.setHeader('X-Datadog-Span-ID', spanId);
-      res.setHeader('X-Datadog-Sampling-Priority', '1');
-    }
+    //   res.setHeader('X-Datadog-Trace-ID', traceId);
+    //   res.setHeader('X-Datadog-Span-ID', spanId);
+    //   res.setHeader('X-Datadog-Sampling-Priority', '1');
+    // }
 
     // Adicionar request ID se não existir
     if (!req.headers['x-request-id']) {
