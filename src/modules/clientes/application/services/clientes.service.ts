@@ -21,55 +21,40 @@ export class ClientesService {
     });
 
     if (existingCliente) {
-      throw new ConflictException(`Cliente com email ${createClienteDto.email} já existe`);
+      throw new ConflictException('Já existe um cliente com este email');
     }
 
     const cliente = this.clienteRepository.create(createClienteDto);
     const savedCliente = await this.clienteRepository.save(cliente);
 
-    // Enviar evento Kafka para cliente criado
-    try {
-      await this.kafkaProducer.sendClienteCreated(savedCliente);
-      
-      // Enviar evento de analytics
-      await this.kafkaProducer.sendAnalyticsEvent({
-        eventType: 'CLIENTE_CREATED_ANALYTICS',
-        clienteId: savedCliente.id,
-        nome: savedCliente.nome,
-        email: savedCliente.email,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('❌ Erro ao enviar eventos Kafka:', error);
-      // Não falhar a operação principal se o Kafka falhar
-    }
+    // Enviar evento para Kafka
+    await this.kafkaProducer.sendClienteCreated(savedCliente);
 
     return savedCliente;
   }
 
   async findAll(): Promise<Cliente[]> {
-    return await this.clienteRepository.find({
+    return this.clienteRepository.find({
       order: { data_criacao: 'DESC' }
     });
   }
 
-  async findAtivos(): Promise<Cliente[]> {
-    // Como não temos campo 'ativo' na entidade Cliente, retornamos todos
-    // Em uma implementação futura, podemos adicionar esse campo
-    return await this.clienteRepository.find({
+  async findActive(): Promise<Cliente[]> {
+    return this.clienteRepository.find({
+      where: { ativo: true },
       order: { data_criacao: 'DESC' }
     });
   }
 
-  async findOne(id: number): Promise<Cliente> {
+  async findById(id: number): Promise<Cliente> {
     const cliente = await this.clienteRepository.findOne({
       where: { id }
     });
-    
+
     if (!cliente) {
       throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
     }
-    
+
     return cliente;
   }
 
@@ -77,71 +62,45 @@ export class ClientesService {
     const cliente = await this.clienteRepository.findOne({
       where: { email }
     });
-    
+
     if (!cliente) {
       throw new NotFoundException(`Cliente com email ${email} não encontrado`);
     }
-    
+
     return cliente;
   }
 
   async update(id: number, updateClienteDto: UpdateClienteDto): Promise<Cliente> {
-    const cliente = await this.findOne(id);
-
-    // Se o email está sendo atualizado, verificar se já existe
+    const cliente = await this.findById(id);
+    
+    // Se o email está sendo alterado, verificar se já existe
     if (updateClienteDto.email && updateClienteDto.email !== cliente.email) {
       const existingCliente = await this.clienteRepository.findOne({
         where: { email: updateClienteDto.email }
       });
 
       if (existingCliente) {
-        throw new ConflictException(`Cliente com email ${updateClienteDto.email} já existe`);
+        throw new ConflictException('Já existe um cliente com este email');
       }
     }
 
+    const previousData = { ...cliente };
+    
     Object.assign(cliente, updateClienteDto);
     const updatedCliente = await this.clienteRepository.save(cliente);
 
-    // Enviar evento Kafka para cliente atualizado
-    try {
-      await this.kafkaProducer.sendClienteUpdated(updatedCliente);
-      
-      // Enviar evento de analytics
-      await this.kafkaProducer.sendAnalyticsEvent({
-        eventType: 'CLIENTE_UPDATED_ANALYTICS',
-        clienteId: updatedCliente.id,
-        nome: updatedCliente.nome,
-        email: updatedCliente.email,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('❌ Erro ao enviar eventos Kafka:', error);
-      // Não falhar a operação principal se o Kafka falhar
-    }
+    // Enviar evento para Kafka
+    await this.kafkaProducer.sendClienteUpdated(updatedCliente);
 
     return updatedCliente;
   }
 
   async remove(id: number): Promise<void> {
-    const cliente = await this.findOne(id);
+    const cliente = await this.findById(id);
     
-    // Enviar evento Kafka para cliente removido
-    try {
-      await this.kafkaProducer.sendClienteDeleted(id);
-      
-      // Enviar evento de analytics
-      await this.kafkaProducer.sendAnalyticsEvent({
-        eventType: 'CLIENTE_DELETED_ANALYTICS',
-        clienteId: cliente.id,
-        nome: cliente.nome,
-        email: cliente.email,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('❌ Erro ao enviar eventos Kafka:', error);
-      // Não falhar a operação principal se o Kafka falhar
-    }
-
     await this.clienteRepository.remove(cliente);
+
+    // Enviar evento para Kafka
+    await this.kafkaProducer.sendClienteDeleted(cliente.id);
   }
 } 

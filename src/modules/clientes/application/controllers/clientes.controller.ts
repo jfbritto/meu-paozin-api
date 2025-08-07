@@ -15,24 +15,23 @@ export class ClientesController {
   @Post()
   @ApiOperation({ summary: 'Criar um novo cliente' })
   @ApiResponse({ status: 201, description: 'Cliente criado com sucesso', type: Cliente })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 409, description: 'Email já existe' })
+  @ApiResponse({ status: 409, description: 'Cliente já existe' })
   async create(@Body() createClienteDto: CreateClienteDto): Promise<Cliente> {
     return this.clientesService.create(createClienteDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar todos os clientes' })
-  @ApiResponse({ status: 200, description: 'Lista de clientes retornada', type: [Cliente] })
+  @ApiResponse({ status: 200, description: 'Lista de clientes', type: [Cliente] })
   async findAll(): Promise<Cliente[]> {
     return this.clientesService.findAll();
   }
 
   @Get('ativos')
   @ApiOperation({ summary: 'Listar clientes ativos' })
-  @ApiResponse({ status: 200, description: 'Lista de clientes ativos retornada', type: [Cliente] })
-  async findAtivos(): Promise<Cliente[]> {
-    return this.clientesService.findAtivos();
+  @ApiResponse({ status: 200, description: 'Lista de clientes ativos', type: [Cliente] })
+  async findActive(): Promise<Cliente[]> {
+    return this.clientesService.findActive();
   }
 
   @Get(':id')
@@ -40,8 +39,8 @@ export class ClientesController {
   @ApiParam({ name: 'id', description: 'ID do cliente' })
   @ApiResponse({ status: 200, description: 'Cliente encontrado', type: Cliente })
   @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
-  async findOne(@Param('id') id: string): Promise<Cliente> {
-    return this.clientesService.findOne(+id);
+  async findById(@Param('id') id: string): Promise<Cliente> {
+    return this.clientesService.findById(+id);
   }
 
   @Get('email/:email')
@@ -57,7 +56,6 @@ export class ClientesController {
   @ApiOperation({ summary: 'Atualizar cliente' })
   @ApiParam({ name: 'id', description: 'ID do cliente' })
   @ApiResponse({ status: 200, description: 'Cliente atualizado com sucesso', type: Cliente })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
   @ApiResponse({ status: 409, description: 'Email já existe' })
   async update(@Param('id') id: string, @Body() updateClienteDto: UpdateClienteDto): Promise<Cliente> {
@@ -65,9 +63,9 @@ export class ClientesController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Excluir cliente' })
+  @ApiOperation({ summary: 'Remover cliente' })
   @ApiParam({ name: 'id', description: 'ID do cliente' })
-  @ApiResponse({ status: 204, description: 'Cliente excluído com sucesso' })
+  @ApiResponse({ status: 200, description: 'Cliente removido com sucesso' })
   @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
   async remove(@Param('id') id: string): Promise<void> {
     return this.clientesService.remove(+id);

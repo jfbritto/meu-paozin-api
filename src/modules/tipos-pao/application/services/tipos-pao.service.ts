@@ -21,55 +21,47 @@ export class TiposPaoService {
     });
 
     if (existingTipoPao) {
-      throw new ConflictException(`Tipo de pão com nome ${createTipoPaoDto.nome} já existe`);
+      throw new ConflictException('Já existe um tipo de pão com este nome');
     }
 
     const tipoPao = this.tipoPaoRepository.create(createTipoPaoDto);
     const savedTipoPao = await this.tipoPaoRepository.save(tipoPao);
 
-    // Enviar evento Kafka para tipo de pão criado
-    try {
-      await this.kafkaProducer.sendTipoPaoCreated(savedTipoPao);
-      
-      // Enviar evento de analytics
-      await this.kafkaProducer.sendAnalyticsEvent({
-        eventType: 'TIPO_PAO_CREATED_ANALYTICS',
-        tipoPaoId: savedTipoPao.id,
-        nome: savedTipoPao.nome,
-        precoBase: savedTipoPao.preco_base,
-        ativo: savedTipoPao.ativo,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('❌ Erro ao enviar eventos Kafka:', error);
-      // Não falhar a operação principal se o Kafka falhar
-    }
+    // Enviar evento para Kafka
+    await this.kafkaProducer.sendTipoPaoCreated({
+      id: savedTipoPao.id,
+      nome: savedTipoPao.nome,
+      descricao: savedTipoPao.descricao,
+      preco_base: savedTipoPao.preco_base,
+      ativo: savedTipoPao.ativo,
+      data_criacao: savedTipoPao.data_criacao,
+    });
 
     return savedTipoPao;
   }
 
   async findAll(): Promise<TipoPao[]> {
-    return await this.tipoPaoRepository.find({
-      order: { nome: 'ASC' }
+    return this.tipoPaoRepository.find({
+      order: { data_criacao: 'DESC' }
     });
   }
 
-  async findAtivos(): Promise<TipoPao[]> {
-    return await this.tipoPaoRepository.find({
+  async findActive(): Promise<TipoPao[]> {
+    return this.tipoPaoRepository.find({
       where: { ativo: true },
-      order: { nome: 'ASC' }
+      order: { data_criacao: 'DESC' }
     });
   }
 
-  async findOne(id: number): Promise<TipoPao> {
+  async findById(id: number): Promise<TipoPao> {
     const tipoPao = await this.tipoPaoRepository.findOne({
       where: { id }
     });
-    
+
     if (!tipoPao) {
       throw new NotFoundException(`Tipo de pão com ID ${id} não encontrado`);
     }
-    
+
     return tipoPao;
   }
 
@@ -77,99 +69,83 @@ export class TiposPaoService {
     const tipoPao = await this.tipoPaoRepository.findOne({
       where: { nome }
     });
-    
+
     if (!tipoPao) {
       throw new NotFoundException(`Tipo de pão com nome ${nome} não encontrado`);
     }
-    
+
     return tipoPao;
   }
 
   async update(id: number, updateTipoPaoDto: UpdateTipoPaoDto): Promise<TipoPao> {
-    const tipoPao = await this.findOne(id);
-
-    // Se o nome está sendo atualizado, verificar se já existe
+    const tipoPao = await this.findById(id);
+    
+    // Se o nome está sendo alterado, verificar se já existe
     if (updateTipoPaoDto.nome && updateTipoPaoDto.nome !== tipoPao.nome) {
       const existingTipoPao = await this.tipoPaoRepository.findOne({
         where: { nome: updateTipoPaoDto.nome }
       });
 
       if (existingTipoPao) {
-        throw new ConflictException(`Tipo de pão com nome ${updateTipoPaoDto.nome} já existe`);
+        throw new ConflictException('Já existe um tipo de pão com este nome');
       }
     }
 
+    const previousData = { ...tipoPao };
+    
     Object.assign(tipoPao, updateTipoPaoDto);
     const updatedTipoPao = await this.tipoPaoRepository.save(tipoPao);
 
-    // Enviar evento Kafka para tipo de pão atualizado
-    try {
-      await this.kafkaProducer.sendTipoPaoUpdated(updatedTipoPao);
-      
-      // Enviar evento de analytics
-      await this.kafkaProducer.sendAnalyticsEvent({
-        eventType: 'TIPO_PAO_UPDATED_ANALYTICS',
-        tipoPaoId: updatedTipoPao.id,
-        nome: updatedTipoPao.nome,
-        precoBase: updatedTipoPao.preco_base,
-        ativo: updatedTipoPao.ativo,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('❌ Erro ao enviar eventos Kafka:', error);
-      // Não falhar a operação principal se o Kafka falhar
-    }
+    // Enviar evento para Kafka
+    await this.kafkaProducer.sendTipoPaoUpdated({
+      id: updatedTipoPao.id,
+      nome: updatedTipoPao.nome,
+      descricao: updatedTipoPao.descricao,
+      previousPrecoBase: previousData.preco_base,
+      newPrecoBase: updatedTipoPao.preco_base,
+      ativo: updatedTipoPao.ativo,
+      data_atualizacao: updatedTipoPao.data_atualizacao,
+    });
 
     return updatedTipoPao;
   }
 
-  async toggleAtivo(id: number): Promise<TipoPao> {
-    const tipoPao = await this.findOne(id);
-    tipoPao.ativo = !tipoPao.ativo;
+  async toggleActive(id: number): Promise<TipoPao> {
+    const tipoPao = await this.findById(id);
     
+    tipoPao.ativo = !tipoPao.ativo;
     const updatedTipoPao = await this.tipoPaoRepository.save(tipoPao);
 
-    // Enviar evento Kafka para tipo de pão atualizado
-    try {
-      await this.kafkaProducer.sendTipoPaoUpdated(updatedTipoPao);
-      
-      // Enviar evento de analytics
-      await this.kafkaProducer.sendAnalyticsEvent({
-        eventType: 'TIPO_PAO_TOGGLE_ANALYTICS',
-        tipoPaoId: updatedTipoPao.id,
-        nome: updatedTipoPao.nome,
-        ativo: updatedTipoPao.ativo,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('❌ Erro ao enviar eventos Kafka:', error);
-      // Não falhar a operação principal se o Kafka falhar
-    }
+    // Enviar evento para Kafka
+    await this.kafkaProducer.sendTipoPaoUpdated({
+      id: updatedTipoPao.id,
+      nome: updatedTipoPao.nome,
+      descricao: updatedTipoPao.descricao,
+      ativo: updatedTipoPao.ativo,
+      data_atualizacao: updatedTipoPao.data_atualizacao,
+    });
 
     return updatedTipoPao;
   }
 
   async remove(id: number): Promise<void> {
-    const tipoPao = await this.findOne(id);
+    const tipoPao = await this.findById(id);
     
-    // Enviar evento Kafka para tipo de pão removido
-    try {
-      await this.kafkaProducer.sendTipoPaoDeleted(id);
-      
-      // Enviar evento de analytics
-      await this.kafkaProducer.sendAnalyticsEvent({
-        eventType: 'TIPO_PAO_DELETED_ANALYTICS',
-        tipoPaoId: tipoPao.id,
-        nome: tipoPao.nome,
-        precoBase: tipoPao.preco_base,
-        ativo: tipoPao.ativo,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('❌ Erro ao enviar eventos Kafka:', error);
-      // Não falhar a operação principal se o Kafka falhar
-    }
-
     await this.tipoPaoRepository.remove(tipoPao);
+
+    // Enviar evento para Kafka
+    await this.kafkaProducer.sendTipoPaoDeleted(tipoPao.id);
+  }
+
+  async getTipoPaoStats(): Promise<any> {
+    const total = await this.tipoPaoRepository.count();
+    const ativos = await this.tipoPaoRepository.count({ where: { ativo: true } });
+    const inativos = total - ativos;
+
+    return {
+      total,
+      ativos,
+      inativos,
+    };
   }
 } 
