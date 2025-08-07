@@ -9,11 +9,6 @@ export const appConfig = () => ({
     synchronize: process.env.NODE_ENV !== 'production',
     logging: process.env.NODE_ENV === 'development',
   },
-  kafka: {
-    clientId: process.env.KAFKA_CLIENT_ID || 'meu-paozin-api',
-    brokers: process.env.KAFKA_BROKERS?.split(',') || ['localhost:9092'],
-    groupId: process.env.KAFKA_GROUP_ID || 'meu-paozin-group',
-  },
   swagger: {
     title: 'MeuPaoZin API',
     description: 'API para gerenciamento de pedidos de pães',

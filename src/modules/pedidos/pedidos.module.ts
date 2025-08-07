@@ -5,12 +5,10 @@ import { PedidosController } from './application/controllers/pedidos.controller'
 import { Pedido } from '../../infrastructure/database/entities/pedido.entity';
 import { Cliente } from '../../infrastructure/database/entities/cliente.entity';
 import { TipoPao } from '../../infrastructure/database/entities/tipo-pao.entity';
-import { KafkaModule } from '../../infrastructure/messaging/kafka/kafka.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Pedido, Cliente, TipoPao]),
-    KafkaModule,
   ],
   controllers: [PedidosController],
   providers: [PedidosService],

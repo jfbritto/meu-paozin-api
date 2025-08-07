@@ -4,14 +4,12 @@ import { Repository } from 'typeorm';
 import { TipoPao } from '../../../../infrastructure/database/entities/tipo-pao.entity';
 import { CreateTipoPaoDto } from '../dto/create-tipo-pao.dto';
 import { UpdateTipoPaoDto } from '../dto/update-tipo-pao.dto';
-import { KafkaProducerService } from '../../../../infrastructure/messaging/kafka/kafka-producer.service';
 
 @Injectable()
 export class TiposPaoService {
   constructor(
     @InjectRepository(TipoPao)
     private readonly tipoPaoRepository: Repository<TipoPao>,
-    private readonly kafkaProducer: KafkaProducerService,
   ) {}
 
   async create(createTipoPaoDto: CreateTipoPaoDto): Promise<TipoPao> {
@@ -26,16 +24,6 @@ export class TiposPaoService {
 
     const tipoPao = this.tipoPaoRepository.create(createTipoPaoDto);
     const savedTipoPao = await this.tipoPaoRepository.save(tipoPao);
-
-    // Enviar evento para Kafka
-    await this.kafkaProducer.sendTipoPaoCreated({
-      id: savedTipoPao.id,
-      nome: savedTipoPao.nome,
-      descricao: savedTipoPao.descricao,
-      preco_base: savedTipoPao.preco_base,
-      ativo: savedTipoPao.ativo,
-      data_criacao: savedTipoPao.data_criacao,
-    });
 
     return savedTipoPao;
   }
@@ -90,22 +78,9 @@ export class TiposPaoService {
         throw new ConflictException('Já existe um tipo de pão com este nome');
       }
     }
-
-    const previousData = { ...tipoPao };
     
     Object.assign(tipoPao, updateTipoPaoDto);
     const updatedTipoPao = await this.tipoPaoRepository.save(tipoPao);
-
-    // Enviar evento para Kafka
-    await this.kafkaProducer.sendTipoPaoUpdated({
-      id: updatedTipoPao.id,
-      nome: updatedTipoPao.nome,
-      descricao: updatedTipoPao.descricao,
-      previousPrecoBase: previousData.preco_base,
-      newPrecoBase: updatedTipoPao.preco_base,
-      ativo: updatedTipoPao.ativo,
-      data_atualizacao: updatedTipoPao.data_atualizacao,
-    });
 
     return updatedTipoPao;
   }
@@ -116,25 +91,12 @@ export class TiposPaoService {
     tipoPao.ativo = !tipoPao.ativo;
     const updatedTipoPao = await this.tipoPaoRepository.save(tipoPao);
 
-    // Enviar evento para Kafka
-    await this.kafkaProducer.sendTipoPaoUpdated({
-      id: updatedTipoPao.id,
-      nome: updatedTipoPao.nome,
-      descricao: updatedTipoPao.descricao,
-      ativo: updatedTipoPao.ativo,
-      data_atualizacao: updatedTipoPao.data_atualizacao,
-    });
-
     return updatedTipoPao;
   }
 
   async remove(id: number): Promise<void> {
     const tipoPao = await this.findById(id);
-    
     await this.tipoPaoRepository.remove(tipoPao);
-
-    // Enviar evento para Kafka
-    await this.kafkaProducer.sendTipoPaoDeleted(tipoPao.id);
   }
 
   async getTipoPaoStats(): Promise<any> {

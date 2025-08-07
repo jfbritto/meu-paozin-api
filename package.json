@@ -22,16 +22,13 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "docker:seed": "docker-compose exec app npm run seed",
-    "kafka:init-topics": "docker-compose exec kafka kafka-topics --create --topic pedidos.created --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 && docker-compose exec kafka kafka-topics --create --topic pedidos.updated --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 && docker-compose exec kafka kafka-topics --create --topic pedidos.cancelled --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1",
-    "kafka:ui": "open http://localhost:8080",
-    "kafka:test": "node scripts/test-kafka-events.js",
-    "setup:complete": "npm run docker:up && sleep 30 && npm run kafka:init-topics && sleep 10 && npm run docker:seed",
+    "setup:complete": "npm run docker:up && sleep 10 && npm run docker:seed",
     "datadog:up": "docker-compose -f docker-compose.datadog.yml --profile datadog up -d",
     "datadog:down": "docker-compose -f docker-compose.datadog.yml --profile datadog down",
     "datadog:logs": "docker-compose -f docker-compose.datadog.yml --profile datadog logs -f",
     "datadog:status": "docker-compose -f docker-compose.datadog.yml --profile datadog ps",
     "setup:datadog": "npm run datadog:up && sleep 10 && npm run docker:up",
-    "setup:full": "npm run setup:datadog && sleep 30 && npm run kafka:init-topics && sleep 10 && npm run docker:seed"
+    "setup:full": "npm run setup:datadog && sleep 10 && npm run docker:seed"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.0",
@@ -42,7 +39,6 @@
     "@nestjs/config": "^3.2.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
-    "kafkajs": "^2.2.4",
     "pg": "^8.11.3",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",

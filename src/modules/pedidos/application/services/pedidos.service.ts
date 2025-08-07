@@ -6,7 +6,6 @@ import { Cliente } from '../../../../infrastructure/database/entities/cliente.en
 import { TipoPao } from '../../../../infrastructure/database/entities/tipo-pao.entity';
 import { CreatePedidoDto } from '../dto/create-pedido.dto';
 import { UpdatePedidoDto } from '../dto/update-pedido.dto';
-import { KafkaProducerService } from '../../../../infrastructure/messaging/kafka/kafka-producer.service';
 
 @Injectable()
 export class PedidosService {
@@ -17,7 +16,6 @@ export class PedidosService {
     private readonly clienteRepository: Repository<Cliente>,
     @InjectRepository(TipoPao)
     private readonly tipoPaoRepository: Repository<TipoPao>,
-    private readonly kafkaProducer: KafkaProducerService,
   ) {}
 
   async create(createPedidoDto: CreatePedidoDto): Promise<Pedido> {
@@ -51,25 +49,6 @@ export class PedidosService {
 
     const savedPedido = await this.pedidoRepository.save(pedido);
 
-    // Enviar evento Kafka para pedido criado
-    try {
-      await this.kafkaProducer.sendPedidoCreated(savedPedido);
-      
-      // Enviar evento de analytics
-      await this.kafkaProducer.sendAnalyticsEvent({
-        eventType: 'PEDIDO_CREATED_ANALYTICS',
-        pedidoId: savedPedido.id,
-        clienteId: savedPedido.cliente_id,
-        tipoPaoId: savedPedido.tipo_pao_id,
-        quantidade: savedPedido.quantidade,
-        precoTotal: savedPedido.preco_total,
-        status: savedPedido.status,
-      });
-    } catch (error) {
-      console.error('❌ Erro ao enviar eventos Kafka:', error);
-      // Não falhar a operação principal se o Kafka falhar
-    }
-
     return savedPedido;
   }
 
@@ -95,7 +74,6 @@ export class PedidosService {
 
   async update(id: number, updatePedidoDto: UpdatePedidoDto): Promise<Pedido> {
     const pedido = await this.findOne(id);
-    const previousStatus = pedido.status;
 
     // Verificar se o cliente existe (se estiver sendo atualizado)
     if (updatePedidoDto.cliente_id) {
@@ -134,51 +112,11 @@ export class PedidosService {
     Object.assign(pedido, updatePedidoDto);
     const updatedPedido = await this.pedidoRepository.save(pedido);
 
-    // Enviar evento Kafka para pedido atualizado
-    try {
-      await this.kafkaProducer.sendPedidoUpdated(updatedPedido, previousStatus);
-      
-      // Enviar evento de analytics
-      await this.kafkaProducer.sendAnalyticsEvent({
-        eventType: 'PEDIDO_UPDATED_ANALYTICS',
-        pedidoId: updatedPedido.id,
-        clienteId: updatedPedido.cliente_id,
-        tipoPaoId: updatedPedido.tipo_pao_id,
-        quantidade: updatedPedido.quantidade,
-        precoTotal: updatedPedido.preco_total,
-        status: updatedPedido.status,
-        previousStatus: previousStatus,
-      });
-    } catch (error) {
-      console.error('❌ Erro ao enviar eventos Kafka:', error);
-      // Não falhar a operação principal se o Kafka falhar
-    }
-
     return updatedPedido;
   }
 
   async remove(id: number): Promise<void> {
     const pedido = await this.findOne(id);
-    
-    // Enviar evento Kafka para pedido cancelado
-    try {
-      await this.kafkaProducer.sendPedidoCancelled(pedido);
-      
-      // Enviar evento de analytics
-      await this.kafkaProducer.sendAnalyticsEvent({
-        eventType: 'PEDIDO_CANCELLED_ANALYTICS',
-        pedidoId: pedido.id,
-        clienteId: pedido.cliente_id,
-        tipoPaoId: pedido.tipo_pao_id,
-        quantidade: pedido.quantidade,
-        precoTotal: pedido.preco_total,
-        status: pedido.status,
-      });
-    } catch (error) {
-      console.error('❌ Erro ao enviar eventos Kafka:', error);
-      // Não falhar a operação principal se o Kafka falhar
-    }
-
     await this.pedidoRepository.remove(pedido);
   }
 

@@ -4,14 +4,12 @@ import { Repository } from 'typeorm';
 import { Cliente } from '../../../../infrastructure/database/entities/cliente.entity';
 import { CreateClienteDto } from '../dto/create-cliente.dto';
 import { UpdateClienteDto } from '../dto/update-cliente.dto';
-import { KafkaProducerService } from '../../../../infrastructure/messaging/kafka/kafka-producer.service';
 
 @Injectable()
 export class ClientesService {
   constructor(
     @InjectRepository(Cliente)
     private readonly clienteRepository: Repository<Cliente>,
-    private readonly kafkaProducer: KafkaProducerService,
   ) {}
 
   async create(createClienteDto: CreateClienteDto): Promise<Cliente> {
@@ -26,9 +24,6 @@ export class ClientesService {
 
     const cliente = this.clienteRepository.create(createClienteDto);
     const savedCliente = await this.clienteRepository.save(cliente);
-
-    // Enviar evento para Kafka
-    await this.kafkaProducer.sendClienteCreated(savedCliente);
 
     return savedCliente;
   }
@@ -84,24 +79,15 @@ export class ClientesService {
         throw new ConflictException('Já existe um cliente com este email');
       }
     }
-
-    const previousData = { ...cliente };
     
     Object.assign(cliente, updateClienteDto);
     const updatedCliente = await this.clienteRepository.save(cliente);
-
-    // Enviar evento para Kafka
-    await this.kafkaProducer.sendClienteUpdated(updatedCliente);
 
     return updatedCliente;
   }
 
   async remove(id: number): Promise<void> {
     const cliente = await this.findById(id);
-    
     await this.clienteRepository.remove(cliente);
-
-    // Enviar evento para Kafka
-    await this.kafkaProducer.sendClienteDeleted(cliente.id);
   }
 } 
