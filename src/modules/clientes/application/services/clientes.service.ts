@@ -40,8 +40,9 @@ export class ClientesService {
   }
 
   async findActive(): Promise<Cliente[]> {
+    // Como a entidade Cliente não tem campo ativo, retornamos todos os clientes
+    // Em uma implementação futura, podemos adicionar esse campo
     return this.clienteRepository.find({
-      where: { ativo: true },
       order: { data_criacao: 'DESC' }
     });
   }
