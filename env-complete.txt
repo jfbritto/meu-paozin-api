@@ -1,0 +1,140 @@
+# =============================================================================
+# CONFIGURAÇÕES DA APLICAÇÃO
+# =============================================================================
+NODE_ENV=development
+PORT=3000
+API_PREFIX=api
+API_VERSION=v1
+
+# =============================================================================
+# CONFIGURAÇÕES DO BANCO DE DADOS POSTGRESQL
+# =============================================================================
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=password
+DB_NAME=pedidos_db
+DB_SYNCHRONIZE=true
+DB_LOGGING=true
+DB_SSL=false
+
+# =============================================================================
+# CONFIGURAÇÕES DO KAFKA
+# =============================================================================
+KAFKA_CLIENT_ID=meu-paozin-api
+KAFKA_BROKERS=localhost:9092
+KAFKA_GROUP_ID=meu-paozin-group
+KAFKA_CONSUMER_GROUP_ID=meu-paozin-consumer-group
+KAFKA_RETRY_INITIAL_RETRY_TIME=100
+KAFKA_RETRY_RETRIES=8
+
+# =============================================================================
+# CONFIGURAÇÕES DO ZOOKEEPER (para Kafka)
+# =============================================================================
+ZOOKEEPER_CLIENT_PORT=2181
+ZOOKEEPER_TICK_TIME=2000
+
+# =============================================================================
+# CONFIGURAÇÕES DO SWAGGER/DOCUMENTAÇÃO
+# =============================================================================
+SWAGGER_TITLE=MeuPaoZin API
+SWAGGER_DESCRIPTION=API para gerenciamento de pedidos de pães
+SWAGGER_VERSION=2.0.0
+SWAGGER_PATH=api/docs
+
+# =============================================================================
+# CONFIGURAÇÕES DE SEGURANÇA
+# =============================================================================
+# JWT_SECRET=your-super-secret-jwt-key-change-in-production
+# JWT_EXPIRES_IN=1d
+# JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
+# JWT_REFRESH_EXPIRES_IN=7d
+
+# =============================================================================
+# CONFIGURAÇÕES DE LOG
+# =============================================================================
+LOG_LEVEL=debug
+LOG_FORMAT=combined
+LOG_COLORIZE=true
+
+# =============================================================================
+# CONFIGURAÇÕES DE CORS
+# =============================================================================
+CORS_ORIGIN=*
+CORS_METHODS=GET,HEAD,PUT,PATCH,POST,DELETE
+CORS_CREDENTIALS=true
+
+# =============================================================================
+# CONFIGURAÇÕES DO CONTEXT7 (opcional)
+# =============================================================================
+CONTEXT7_API_KEY=sua-chave-api-do-context7
+CONTEXT7_BASE_URL=https://api.context7.com
+CONTEXT7_TIMEOUT=30000
+
+# =============================================================================
+# CONFIGURAÇÕES DE VALIDAÇÃO
+# =============================================================================
+VALIDATION_WHITELIST=true
+VALIDATION_FORBID_NON_WHITELISTED=true
+VALIDATION_TRANSFORM=true
+
+# =============================================================================
+# CONFIGURAÇÕES DE TESTE
+# =============================================================================
+TEST_DB_HOST=localhost
+TEST_DB_PORT=5432
+TEST_DB_USERNAME=postgres
+TEST_DB_PASSWORD=password
+TEST_DB_NAME=pedidos_test_db
+
+# =============================================================================
+# CONFIGURAÇÕES DE DOCKER (para desenvolvimento local)
+# =============================================================================
+DOCKER_COMPOSE_FILE=docker-compose.yml
+DOCKER_NETWORK=meupaozin-network
+
+# =============================================================================
+# CONFIGURAÇÕES DE PRODUÇÃO (substituir em produção)
+# =============================================================================
+# NODE_ENV=production
+# PORT=3000
+# DB_HOST=your-production-db-host
+# DB_PORT=5432
+# DB_USERNAME=your-production-db-user
+# DB_PASSWORD=your-production-db-password
+# DB_NAME=pedidos_db
+# DB_SYNCHRONIZE=false
+# DB_LOGGING=false
+# DB_SSL=true
+# KAFKA_BROKERS=your-production-kafka-brokers
+# JWT_SECRET=your-production-jwt-secret
+# LOG_LEVEL=info
+# CORS_ORIGIN=https://your-frontend-domain.com
+
+# =============================================================================
+# CONFIGURAÇÕES DO DATADOG (OBSERVABILIDADE)
+# =============================================================================
+DD_SERVICE_NAME=meu-paozin-api
+DD_ENV=development
+DD_VERSION=1.0.0
+DD_TRACE_ENABLED=true
+DD_AGENT_HOST=localhost
+DD_AGENT_PORT=8126
+DD_LOGS_ENABLED=true
+DD_PROFILING_ENABLED=true
+DD_RUNTIME_METRICS_ENABLED=true
+DD_ANALYTICS_ENABLED=true
+DD_LOG_INJECTION=true
+DD_REPORT_HOSTNAME=true
+
+# =============================================================================
+# CONFIGURAÇÕES PARA GITHUB ACTIONS
+# =============================================================================
+# CI=true
+# NODE_ENV=test
+# DB_HOST=localhost
+# DB_PORT=5432
+# DB_USERNAME=postgres
+# DB_PASSWORD=password
+# DB_NAME=pedidos_test_db
+# KAFKA_BROKERS=localhost:9092 

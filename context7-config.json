@@ -1,0 +1,5 @@
+{
+  "apiKey": "sua-chave-api-do-context7",
+  "baseUrl": "https://api.context7.com",
+  "timeout": 30000
+} 
